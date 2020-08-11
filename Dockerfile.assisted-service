@@ -25,9 +25,13 @@ RUN CGO_ENABLED=0 GOFLAGS="" GO111MODULE=on go build -o /build/assisted-service 
 RUN cd build && python3 setup.py sdist --dist-dir /assisted-service-client
 
 # Create final image
-FROM registry.access.redhat.com/ubi8/ubi:latest
+FROM registry.access.redhat.com/ubi8/ubi-minimal:latest as certs
+
+FROM scratch
 ARG GIT_REVISION
 LABEL "git_revision"=${GIT_REVISION}
 COPY --from=builder /build/assisted-service /assisted-service
 COPY --from=builder /assisted-service-client/assisted-service-client-*.tar.gz /clients/
+COPY --from=certs /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem /etc/ssl/certs/ca-bundle.crt
+COPY --from=certs /etc/pki/ca-trust/extracted/openssl/ca-bundle.trust.crt /etc/ssl/certs/ca-bundle.trust.crt
 CMD ["/assisted-service"]
