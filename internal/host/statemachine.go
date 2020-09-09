@@ -29,6 +29,7 @@ func NewHostStateMachine(th *transitionHandler) stateswitch.StateMachine {
 			stateswitch.State(models.HostStatusDiscovering),
 			stateswitch.State(models.HostStatusKnown),
 			stateswitch.State(models.HostStatusDisconnected),
+			stateswitch.State(models.HostStatusInstalled),
 			stateswitch.State(models.HostStatusInsufficient),
 			stateswitch.State(models.HostStatusResettingPendingUserAction),
 		},

@@ -2328,6 +2328,45 @@ func init() {
           }
         }
       }
+    },
+    "/installed_clusters": {
+      "post": {
+        "tags": [
+          "installer"
+        ],
+        "summary": "Register an installed OpenShift cluster.",
+        "operationId": "RegisterInstalledCluster",
+        "parameters": [
+          {
+            "name": "new-installed-cluster-params",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/installed-cluster-create-params"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Success.",
+            "schema": {
+              "$ref": "#/definitions/cluster"
+            }
+          },
+          "400": {
+            "description": "Error.",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Error.",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      }
     }
   },
   "definitions": {
@@ -3445,6 +3484,38 @@ func init() {
     },
     "ingress-cert-params": {
       "type": "string"
+    },
+    "installed-cluster-create-params": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "console_url",
+        "openshift_version"
+      ],
+      "properties": {
+        "console_url": {
+          "description": "The console URL of the node.",
+          "type": "string"
+        },
+        "id": {
+          "description": "Unique identifier of the object.",
+          "type": "string",
+          "format": "uuid"
+        },
+        "name": {
+          "description": "Name of the OpenShift cluster.",
+          "type": "string"
+        },
+        "openshift_version": {
+          "description": "Version of the OpenShift cluster.",
+          "type": "string",
+          "enum": [
+            "4.5",
+            "4.6"
+          ]
+        }
+      }
     },
     "interface": {
       "type": "object",
@@ -6049,6 +6120,45 @@ func init() {
           }
         }
       }
+    },
+    "/installed_clusters": {
+      "post": {
+        "tags": [
+          "installer"
+        ],
+        "summary": "Register an installed OpenShift cluster.",
+        "operationId": "RegisterInstalledCluster",
+        "parameters": [
+          {
+            "name": "new-installed-cluster-params",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/installed-cluster-create-params"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Success.",
+            "schema": {
+              "$ref": "#/definitions/cluster"
+            }
+          },
+          "400": {
+            "description": "Error.",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Error.",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      }
     }
   },
   "definitions": {
@@ -7173,6 +7283,38 @@ func init() {
     },
     "ingress-cert-params": {
       "type": "string"
+    },
+    "installed-cluster-create-params": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "console_url",
+        "openshift_version"
+      ],
+      "properties": {
+        "console_url": {
+          "description": "The console URL of the node.",
+          "type": "string"
+        },
+        "id": {
+          "description": "Unique identifier of the object.",
+          "type": "string",
+          "format": "uuid"
+        },
+        "name": {
+          "description": "Name of the OpenShift cluster.",
+          "type": "string"
+        },
+        "openshift_version": {
+          "description": "Version of the OpenShift cluster.",
+          "type": "string",
+          "enum": [
+            "4.5",
+            "4.6"
+          ]
+        }
+      }
     },
     "interface": {
       "type": "object",

@@ -260,6 +260,10 @@ func (f fakeInventory) RegisterHost(ctx context.Context, params installer.Regist
 	return installer.NewRegisterHostCreated()
 }
 
+func (f fakeInventory) RegisterInstalledCluster(ctx context.Context, params installer.RegisterInstalledClusterParams) middleware.Responder {
+	return installer.NewRegisterHostCreated()
+}
+
 func (f fakeInventory) ResetCluster(ctx context.Context, params installer.ResetClusterParams) middleware.Responder {
 	panic("Implement Me!")
 }

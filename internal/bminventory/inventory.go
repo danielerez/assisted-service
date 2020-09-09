@@ -57,9 +57,12 @@ import (
 
 const kubeconfig = "kubeconfig"
 
+const workerIgnition = "worker.ign"
+
 const (
-	ResourceKindHost    = "Host"
-	ResourceKindCluster = "Cluster"
+	ResourceKindHost        = "Host"
+	ResourceKindCluster     = "Cluster"
+	ResourceKindClusterDay2 = "ClusterDay2"
 )
 
 const DefaultUser = "kubeadmin"
@@ -168,6 +171,17 @@ const ignitionConfigFormat = `{
 	  },
 	  "contents": { "source": "data:,{{.RH_ROOT_CA}}" }
 	}{{end}}]
+  }
+}`
+
+const nodeIgnitionFormat = `{
+  "ignition": {
+    "version": "3.1.0",
+    "config": {
+      "merge": [{
+        "source": "{{.CONSOLE_URL}}"
+      }]
+    }
   }
 }`
 
@@ -321,7 +335,7 @@ func (b *bareMetalInventory) RegisterCluster(ctx context.Context, params install
 	cluster := common.Cluster{Cluster: models.Cluster{
 		ID:                       &id,
 		Href:                     swag.String(url.String()),
-		Kind:                     swag.String(ResourceKindCluster),
+		Kind:                     swag.String(ResourceKindClusterDay2),
 		BaseDNSDomain:            params.NewClusterParams.BaseDNSDomain,
 		ClusterNetworkCidr:       swag.StringValue(params.NewClusterParams.ClusterNetworkCidr),
 		ClusterNetworkHostPrefix: params.NewClusterParams.ClusterNetworkHostPrefix,
@@ -2589,6 +2603,91 @@ func (b *bareMetalInventory) customizeHostStages(host *models.Host) {
 
 func (b *bareMetalInventory) customizeHostname(host *models.Host) {
 	host.RequestedHostname = hostutil.GetHostnameForMsg(host)
+}
+
+func (b *bareMetalInventory) RegisterInstalledCluster(ctx context.Context, params installer.RegisterInstalledClusterParams) middleware.Responder {
+	log := logutil.FromContext(ctx, b.log)
+	id := strfmt.UUID(uuid.New().String())
+	url := installer.GetClusterURL{ClusterID: id}
+	log.Infof("Register installed-cluster: %s with id %s", swag.StringValue(params.NewInstalledClusterParams.Name), id)
+
+	cluster := common.Cluster{Cluster: models.Cluster{
+		ID:               &id,
+		Href:             swag.String(url.String()),
+		Kind:             swag.String(ResourceKindClusterDay2),
+		Name:             swag.StringValue(params.NewInstalledClusterParams.Name),
+		OpenshiftVersion: swag.StringValue(params.NewInstalledClusterParams.OpenshiftVersion),
+		UpdatedAt:        strfmt.DateTime{},
+	}}
+
+	if err := validations.ValidateClusterNameFormat(swag.StringValue(params.NewInstalledClusterParams.Name)); err != nil {
+		return common.NewApiError(http.StatusBadRequest, err)
+	}
+
+	// After registering the cluster, its status should be 'Insufficient'
+	err := b.clusterApi.RegisterCluster(ctx, &cluster)
+	if err != nil {
+		log.Errorf("failed to register cluster %s ", swag.StringValue(params.NewInstalledClusterParams.Name))
+		return installer.NewRegisterInstalledClusterInternalServerError().
+			WithPayload(common.GenerateError(http.StatusInternalServerError, err))
+	}
+
+	// Persist worker-ignition to s3 for cluster
+	ignitionConfig, err := b.formatNodeIgnitionFile(swag.StringValue(params.NewInstalledClusterParams.ConsoleURL))
+	if err != nil {
+		log.WithError(err).Errorf("failed to format ignition config file for cluster %s", cluster.ID)
+	}
+	fileName := fmt.Sprintf("%s/%s", cluster.ID, workerIgnition)
+	if err := b.objectHandler.Upload(ctx, ignitionConfig, fileName); err != nil {
+		return installer.NewRegisterInstalledClusterInternalServerError().
+			WithPayload(common.GenerateError(http.StatusInternalServerError, fmt.Errorf("failed to upload %s to s3", fileName)))
+	}
+
+	// Update cluster status to Installed
+	installedStatus := models.ClusterStatusInstalled
+	if err := b.updateClusterStatus(ctx, &cluster, &installedStatus); err != nil {
+		log.Errorf("failed to update status of cluster %s", swag.StringValue(params.NewInstalledClusterParams.Name))
+		return installer.NewRegisterInstalledClusterInternalServerError().
+			WithPayload(common.GenerateError(http.StatusInternalServerError, err))
+	}
+
+	return installer.NewRegisterInstalledClusterCreated().WithPayload(&cluster.Cluster)
+}
+
+func (b *bareMetalInventory) formatNodeIgnitionFile(consoleURL string) ([]byte, error) {
+	var ignitionParams = map[string]string{
+		"CONSOLE_URL": consoleURL,
+	}
+	tmpl, err := template.New("nodeIgnition").Parse(nodeIgnitionFormat)
+	if err != nil {
+		return nil, err
+	}
+	buf := &bytes.Buffer{}
+	if err = tmpl.Execute(buf, ignitionParams); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func (b *bareMetalInventory) updateClusterStatus(ctx context.Context, c *common.Cluster, status *string) error {
+	log := logutil.FromContext(ctx, b.log)
+	srcStatus := *c.Status
+	updates := map[string]interface{}{
+		"status":            swag.StringValue(status),
+		"status_info":       swag.StringValue(status),
+		"status_updated_at": strfmt.DateTime(time.Now()),
+	}
+	dbReply := b.db.Model(&models.Cluster{}).Where("id = ?", c.ID.String()).Updates(updates)
+	if dbReply.Error != nil {
+		return errors.Wrapf(dbReply.Error, "failed to update cluster <%s> state from <%s> to <%s>",
+			c.ID.String(), srcStatus, swag.StringValue(c.Status))
+	}
+	c.Status = status
+	c.StatusInfo = status
+	log.Infof("Updated cluster <%s> status from <%s> to <%s> with fields: <%v>",
+		c.ID.String(), srcStatus, swag.StringValue(c.Status), updates)
+
+	return nil
 }
 
 func proxySettingsChanged(params *models.ClusterUpdateParams, cluster *common.Cluster) bool {
