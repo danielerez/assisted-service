@@ -185,6 +185,17 @@ const nodeIgnitionFormat = `{
   }
 }`
 
+const nodeIgnitionFormat = `{
+  "ignition": {
+    "version": "3.1.0",
+    "config": {
+      "merge": [{
+        "source": "{{.CONSOLE_URL}}"
+      }]
+    }
+  }
+}`
+
 var clusterFileNames = []string{
 	"kubeconfig",
 	"bootstrap.ign",
