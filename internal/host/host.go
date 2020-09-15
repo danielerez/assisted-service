@@ -25,6 +25,11 @@ import (
 	logutil "github.com/openshift/assisted-service/pkg/log"
 )
 
+const (
+	ResourceKindHost     = "Host"
+	ResourceKindDay2Host = "Day2Host"
+)
+
 var BootstrapStages = [...]models.HostStage{
 	models.HostStageStartingInstallation, models.HostStageInstalling,
 	models.HostStageWritingImageToDisk, models.HostStageWaitingForControlPlane,
@@ -281,6 +286,14 @@ func (m *Manager) UpdateInstallProgress(ctx context.Context, h *models.Host, pro
 
 		_, err = updateHostStatus(ctx, logutil.FromContext(ctx, m.log), m.db, m.eventsHandler, h.ClusterID, *h.ID,
 			swag.StringValue(h.Status), models.HostStatusError, statusInfo)
+	case models.HostStageRebooting:
+		if swag.StringValue(h.Kind) == ResourceKindDay2Host {
+			_, err = updateHostProgress(ctx, logutil.FromContext(ctx, m.log), m.db, m.eventsHandler, h.ClusterID, *h.ID,
+				swag.StringValue(h.Status), models.HostStatusInstalled, statusInfo,
+				h.Progress.CurrentStage, progress.CurrentStage, progress.ProgressInfo)
+			break
+		}
+		fallthrough
 	default:
 		_, err = updateHostProgress(ctx, logutil.FromContext(ctx, m.log), m.db, m.eventsHandler, h.ClusterID, *h.ID,
 			swag.StringValue(h.Status), models.HostStatusInstallingInProgress, statusInfo,

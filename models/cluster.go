@@ -103,7 +103,7 @@ type Cluster struct {
 	NoProxy string `json:"no_proxy,omitempty"`
 
 	// Version of the OpenShift cluster.
-	// Enum: [4.5 4.6]
+	// Enum: [4.6]
 	OpenshiftVersion string `json:"openshift_version,omitempty"`
 
 	// org id
@@ -121,7 +121,7 @@ type Cluster struct {
 
 	// Status of the OpenShift cluster.
 	// Required: true
-	// Enum: [insufficient ready error preparing-for-installation pending-for-input installing finalizing installed]
+	// Enum: [insufficient ready error preparing-for-installation pending-for-input installing finalizing installed day2cluster]
 	Status *string `json:"status"`
 
 	// Additional information pertaining to the status of the OpenShift cluster.
@@ -478,7 +478,7 @@ var clusterTypeOpenshiftVersionPropEnum []interface{}
 
 func init() {
 	var res []string
-	if err := json.Unmarshal([]byte(`["4.5","4.6"]`), &res); err != nil {
+	if err := json.Unmarshal([]byte(`["4.6"]`), &res); err != nil {
 		panic(err)
 	}
 	for _, v := range res {
@@ -487,9 +487,6 @@ func init() {
 }
 
 const (
-
-	// ClusterOpenshiftVersionNr45 captures enum value "4.5"
-	ClusterOpenshiftVersionNr45 string = "4.5"
 
 	// ClusterOpenshiftVersionNr46 captures enum value "4.6"
 	ClusterOpenshiftVersionNr46 string = "4.6"
@@ -534,7 +531,7 @@ var clusterTypeStatusPropEnum []interface{}
 
 func init() {
 	var res []string
-	if err := json.Unmarshal([]byte(`["insufficient","ready","error","preparing-for-installation","pending-for-input","installing","finalizing","installed"]`), &res); err != nil {
+	if err := json.Unmarshal([]byte(`["insufficient","ready","error","preparing-for-installation","pending-for-input","installing","finalizing","installed","day2cluster"]`), &res); err != nil {
 		panic(err)
 	}
 	for _, v := range res {
@@ -567,6 +564,9 @@ const (
 
 	// ClusterStatusInstalled captures enum value "installed"
 	ClusterStatusInstalled string = "installed"
+
+	// ClusterStatusDay2cluster captures enum value "day2cluster"
+	ClusterStatusDay2cluster string = "day2cluster"
 )
 
 // prop value enum

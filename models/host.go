@@ -93,7 +93,7 @@ type Host struct {
 
 	// status
 	// Required: true
-	// Enum: [discovering known disconnected insufficient disabled preparing-for-installation pending-for-input installing installing-in-progress installing-pending-user-action resetting-pending-user-action installed error resetting]
+	// Enum: [discovering known disconnected insufficient disabled preparing-for-installation pending-for-input installing installing-in-progress installing-pending-user-action resetting-pending-user-action installed error resetting day2-installed]
 	Status *string `json:"status"`
 
 	// status info
@@ -387,7 +387,7 @@ var hostTypeStatusPropEnum []interface{}
 
 func init() {
 	var res []string
-	if err := json.Unmarshal([]byte(`["discovering","known","disconnected","insufficient","disabled","preparing-for-installation","pending-for-input","installing","installing-in-progress","installing-pending-user-action","resetting-pending-user-action","installed","error","resetting"]`), &res); err != nil {
+	if err := json.Unmarshal([]byte(`["discovering","known","disconnected","insufficient","disabled","preparing-for-installation","pending-for-input","installing","installing-in-progress","installing-pending-user-action","resetting-pending-user-action","installed","error","resetting","day2-installed"]`), &res); err != nil {
 		panic(err)
 	}
 	for _, v := range res {
@@ -438,6 +438,9 @@ const (
 
 	// HostStatusResetting captures enum value "resetting"
 	HostStatusResetting string = "resetting"
+
+	// HostStatusDay2Installed captures enum value "day2-installed"
+	HostStatusDay2Installed string = "day2-installed"
 )
 
 // prop value enum

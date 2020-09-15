@@ -2508,7 +2508,6 @@ func init() {
           "description": "Version of the OpenShift cluster.",
           "type": "string",
           "enum": [
-            "4.5",
             "4.6"
           ]
         },
@@ -2540,7 +2539,8 @@ func init() {
             "pending-for-input",
             "installing",
             "finalizing",
-            "installed"
+            "installed",
+            "day2cluster"
           ]
         },
         "status_info": {
@@ -2627,7 +2627,6 @@ func init() {
           "description": "Version of the OpenShift cluster.",
           "type": "string",
           "enum": [
-            "4.5",
             "4.6"
           ]
         },
@@ -3240,7 +3239,8 @@ func init() {
             "resetting-pending-user-action",
             "installed",
             "error",
-            "resetting"
+            "resetting",
+            "day2-installed"
           ]
         },
         "status_info": {
@@ -3511,7 +3511,6 @@ func init() {
           "description": "Version of the OpenShift cluster.",
           "type": "string",
           "enum": [
-            "4.5",
             "4.6"
           ]
         }
@@ -6324,7 +6323,6 @@ func init() {
           "description": "Version of the OpenShift cluster.",
           "type": "string",
           "enum": [
-            "4.5",
             "4.6"
           ]
         },
@@ -6356,7 +6354,8 @@ func init() {
             "pending-for-input",
             "installing",
             "finalizing",
-            "installed"
+            "installed",
+            "day2cluster"
           ]
         },
         "status_info": {
@@ -6443,7 +6442,6 @@ func init() {
           "description": "Version of the OpenShift cluster.",
           "type": "string",
           "enum": [
-            "4.5",
             "4.6"
           ]
         },
@@ -7038,7 +7036,8 @@ func init() {
             "resetting-pending-user-action",
             "installed",
             "error",
-            "resetting"
+            "resetting",
+            "day2-installed"
           ]
         },
         "status_info": {
@@ -7310,7 +7309,6 @@ func init() {
           "description": "Version of the OpenShift cluster.",
           "type": "string",
           "enum": [
-            "4.5",
             "4.6"
           ]
         }

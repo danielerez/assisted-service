@@ -34,7 +34,7 @@ type InstalledClusterCreateParams struct {
 
 	// Version of the OpenShift cluster.
 	// Required: true
-	// Enum: [4.5 4.6]
+	// Enum: [4.6]
 	OpenshiftVersion *string `json:"openshift_version"`
 }
 
@@ -99,7 +99,7 @@ var installedClusterCreateParamsTypeOpenshiftVersionPropEnum []interface{}
 
 func init() {
 	var res []string
-	if err := json.Unmarshal([]byte(`["4.5","4.6"]`), &res); err != nil {
+	if err := json.Unmarshal([]byte(`["4.6"]`), &res); err != nil {
 		panic(err)
 	}
 	for _, v := range res {
@@ -108,9 +108,6 @@ func init() {
 }
 
 const (
-
-	// InstalledClusterCreateParamsOpenshiftVersionNr45 captures enum value "4.5"
-	InstalledClusterCreateParamsOpenshiftVersionNr45 string = "4.5"
 
 	// InstalledClusterCreateParamsOpenshiftVersionNr46 captures enum value "4.6"
 	InstalledClusterCreateParamsOpenshiftVersionNr46 string = "4.6"

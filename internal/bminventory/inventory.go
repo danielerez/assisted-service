@@ -35,7 +35,7 @@ import (
 	"github.com/openshift/assisted-service/internal/cluster/validations"
 	"github.com/openshift/assisted-service/internal/common"
 	"github.com/openshift/assisted-service/internal/events"
-	"github.com/openshift/assisted-service/internal/host"
+	hostapi "github.com/openshift/assisted-service/internal/host"
 	"github.com/openshift/assisted-service/internal/installcfg"
 	"github.com/openshift/assisted-service/internal/metrics"
 	"github.com/openshift/assisted-service/internal/network"
@@ -60,7 +60,6 @@ const kubeconfig = "kubeconfig"
 const workerIgnition = "worker.ign"
 
 const (
-	ResourceKindHost        = "Host"
 	ResourceKindCluster     = "Cluster"
 	ResourceKindClusterDay2 = "ClusterDay2"
 )
@@ -185,17 +184,6 @@ const nodeIgnitionFormat = `{
   }
 }`
 
-const nodeIgnitionFormat = `{
-  "ignition": {
-    "version": "3.1.0",
-    "config": {
-      "merge": [{
-        "source": "{{.CONSOLE_URL}}"
-      }]
-    }
-  }
-}`
-
 var clusterFileNames = []string{
 	"kubeconfig",
 	"bootstrap.ign",
@@ -211,7 +199,7 @@ type bareMetalInventory struct {
 	Config
 	db            *gorm.DB
 	log           logrus.FieldLogger
-	hostApi       host.API
+	hostApi       hostapi.API
 	clusterApi    cluster.API
 	eventsHandler events.Handler
 	objectHandler s3wrapper.API
@@ -225,7 +213,7 @@ var _ restapi.InstallerAPI = &bareMetalInventory{}
 func NewBareMetalInventory(
 	db *gorm.DB,
 	log logrus.FieldLogger,
-	hostApi host.API,
+	hostApi hostapi.API,
 	clusterApi cluster.API,
 	cfg Config,
 	generator generator.ISOInstallConfigGenerator,
@@ -1381,10 +1369,14 @@ func (b *bareMetalInventory) RegisterHost(ctx context.Context, params installer.
 	}
 
 	url := installer.GetHostURL{ClusterID: params.ClusterID, HostID: *params.NewHostParams.HostID}
+	kind := swag.String(hostapi.ResourceKindHost)
+	if swag.StringValue(cluster.Kind) == ResourceKindClusterDay2 {
+		kind = swag.String(hostapi.ResourceKindDay2Host)
+	}
 	host = models.Host{
 		ID:                    params.NewHostParams.HostID,
 		Href:                  swag.String(url.String()),
-		Kind:                  swag.String(ResourceKindHost),
+		Kind:                  kind,
 		ClusterID:             params.ClusterID,
 		CheckedInAt:           strfmt.DateTime(time.Now()),
 		DiscoveryAgentVersion: params.NewHostParams.DiscoveryAgentVersion,
@@ -2635,8 +2627,8 @@ func (b *bareMetalInventory) RegisterInstalledCluster(ctx context.Context, param
 		return common.NewApiError(http.StatusBadRequest, err)
 	}
 
-	// After registering the cluster, its status should be 'Insufficient'
-	err := b.clusterApi.RegisterCluster(ctx, &cluster)
+	// After registering the cluster, its status should be 'ClusterStatusDay2cluster'
+	err := b.clusterApi.RegisterDay2Cluster(ctx, &cluster)
 	if err != nil {
 		log.Errorf("failed to register cluster %s ", swag.StringValue(params.NewInstalledClusterParams.Name))
 		return installer.NewRegisterInstalledClusterInternalServerError().
