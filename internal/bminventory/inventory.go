@@ -178,7 +178,7 @@ const nodeIgnitionFormat = `{
     "version": "3.1.0",
     "config": {
       "merge": [{
-        "source": "{{.CONSOLE_URL}}"
+        "source": "{{.SOURCE}}"
       }]
     }
   }
@@ -334,7 +334,7 @@ func (b *bareMetalInventory) RegisterCluster(ctx context.Context, params install
 	cluster := common.Cluster{Cluster: models.Cluster{
 		ID:                       &id,
 		Href:                     swag.String(url.String()),
-		Kind:                     swag.String(ResourceKindClusterDay2),
+		Kind:                     swag.String(ResourceKindCluster),
 		BaseDNSDomain:            params.NewClusterParams.BaseDNSDomain,
 		ClusterNetworkCidr:       swag.StringValue(params.NewClusterParams.ClusterNetworkCidr),
 		ClusterNetworkHostPrefix: params.NewClusterParams.ClusterNetworkHostPrefix,
@@ -2658,8 +2658,12 @@ func (b *bareMetalInventory) RegisterInstalledCluster(ctx context.Context, param
 }
 
 func (b *bareMetalInventory) formatNodeIgnitionFile(consoleURL string) ([]byte, error) {
+	url, err := url.Parse(consoleURL)
+	if err != nil {
+		return nil, err
+	}
 	var ignitionParams = map[string]string{
-		"CONSOLE_URL": consoleURL,
+		"SOURCE": fmt.Sprintf("https://%s/config/worker", url.Host),
 	}
 	tmpl, err := template.New("nodeIgnition").Parse(nodeIgnitionFormat)
 	if err != nil {
