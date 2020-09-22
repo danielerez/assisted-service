@@ -103,7 +103,7 @@ func (i *InstructionManager) GetNextSteps(ctx context.Context, host *models.Host
 
 	returnSteps := models.Steps{}
 	stateToSteps := i.day1HostStateToSteps
-	if swag.StringValue(host.Kind) == ResourceKindDay2Host {
+	if swag.StringValue(host.Kind) == models.HostKindDay2Host {
 		stateToSteps = i.day2HostStateToSteps
 	}
 

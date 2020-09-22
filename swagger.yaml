@@ -706,6 +706,52 @@ paths:
           schema:
             $ref: '#/definitions/error'
 
+  /clusters/{cluster_id}/actions/install_hosts:
+    post:
+      tags:
+        - installer
+      summary: Installs the OpenShift bare metal cluster.
+      operationId: InstallHosts
+      parameters:
+        - in: path
+          name: cluster_id
+          type: string
+          format: uuid
+          required: true
+      responses:
+        202:
+          description: Success.
+          schema:
+            $ref: '#/definitions/cluster'
+        400:
+          description: Error.
+          schema:
+            $ref: '#/definitions/error'
+        401:
+          description: Unauthorized.
+          schema:
+            $ref: '#/definitions/infra_error'
+        403:
+          description: Forbidden.
+          schema:
+            $ref: '#/definitions/infra_error'
+        404:
+          description: Error.
+          schema:
+            $ref: '#/definitions/error'
+        405:
+          description: Method Not Allowed.
+          schema:
+            $ref: '#/definitions/error'
+        409:
+          description: Error.
+          schema:
+            $ref: '#/definitions/error'
+        500:
+          description: Error.
+          schema:
+            $ref: '#/definitions/error'
+
   /clusters/{cluster_id}/actions/cancel:
     post:
       tags:
@@ -1708,7 +1754,7 @@ definitions:
     properties:
       kind:
         type: string
-        enum: ['Host']
+        enum: ['Host', 'Day2Host']
         description: Indicates the type of this object. Will be 'Host' if this is a complete object or 'HostLink' if it is just a link.
       id:
         type: string
@@ -2068,7 +2114,7 @@ definitions:
     required:
       - id
       - name
-      - console_url
+      - api_vip
       - openshift_version
     properties:
       id:
@@ -2078,9 +2124,9 @@ definitions:
       name:
         type: string
         description: Name of the OpenShift cluster.
-      console_url:
+      api_vip:
         type: string
-        description: The console URL of the node.
+        description: api vip domain.
       openshift_version:
         type: string
         enum: ['4.6']
@@ -2098,7 +2144,7 @@ definitions:
     properties:
       kind:
         type: string
-        enum: ['Cluster']
+        enum: ['Cluster', 'ClusterDay2']
         description: Indicates the type of this object. Will be 'Cluster' if this is a complete object or 'ClusterLink' if it is just a link.
       id:
         type: string

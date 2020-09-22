@@ -59,11 +59,6 @@ const kubeconfig = "kubeconfig"
 
 const workerIgnition = "worker.ign"
 
-const (
-	ResourceKindCluster     = "Cluster"
-	ResourceKindClusterDay2 = "ClusterDay2"
-)
-
 const DefaultUser = "kubeadmin"
 const ConsoleUrlPrefix = "https://console-openshift-console.apps"
 
@@ -334,7 +329,7 @@ func (b *bareMetalInventory) RegisterCluster(ctx context.Context, params install
 	cluster := common.Cluster{Cluster: models.Cluster{
 		ID:                       &id,
 		Href:                     swag.String(url.String()),
-		Kind:                     swag.String(ResourceKindCluster),
+		Kind:                     swag.String(models.ClusterKindCluster),
 		BaseDNSDomain:            params.NewClusterParams.BaseDNSDomain,
 		ClusterNetworkCidr:       swag.StringValue(params.NewClusterParams.ClusterNetworkCidr),
 		ClusterNetworkHostPrefix: params.NewClusterParams.ClusterNetworkHostPrefix,
@@ -811,6 +806,73 @@ func (b *bareMetalInventory) InstallCluster(ctx context.Context, params installe
 	}()
 
 	log.Infof("Successfully prepared cluster <%s> for installation", params.ClusterID.String())
+	return installer.NewInstallClusterAccepted().WithPayload(&cluster.Cluster)
+}
+
+func (b *bareMetalInventory) InstallHosts(ctx context.Context, params installer.InstallHostsParams) middleware.Responder {
+	log := logutil.FromContext(ctx, b.log)
+	var cluster common.Cluster
+	var err error
+
+	log.Infof("YEV - Starting install hosts")
+
+	if err = b.db.Preload("Hosts").First(&cluster, identity.AddUserFilter(ctx, "id = ?"), params.ClusterID).Error; err != nil {
+		return common.GenerateErrorResponder(err)
+	}
+
+	// auto select hosts roles if not selected yet.
+	err = b.db.Transaction(func(tx *gorm.DB) error {
+		for i := range cluster.Hosts {
+			if err = b.hostApi.AutoAssignRole(ctx, cluster.Hosts[i], tx); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+
+	if err != nil {
+		return common.GenerateErrorResponder(err)
+	}
+
+	if err = b.refreshAllHosts(ctx, &cluster); err != nil {
+		return common.GenerateErrorResponder(err)
+	}
+
+	txSuccess := false
+	tx := b.db.Begin()
+	defer func() {
+		if !txSuccess {
+			log.Error("InstallDay2Hosts failed")
+			tx.Rollback()
+		}
+		if r := recover(); r != nil {
+			log.Error("InstallDay2Hosts failed")
+			tx.Rollback()
+		}
+	}()
+
+	// in case host monitor already updated the state we need to use FOR UPDATE option
+	tx = transaction.AddForUpdateQueryOption(tx)
+
+	if err = tx.Preload("Hosts").First(&cluster, "id = ?", params.ClusterID).Error; err != nil {
+		return common.GenerateErrorResponder(err)
+	}
+
+	// move hosts to installing
+	for i := range cluster.Hosts {
+		if installErr := b.hostApi.Install(ctx, cluster.Hosts[i], tx); installErr != nil {
+			// we just logs the error, each host install is independent
+			log.Error("Failed to move host %s to installing", cluster.Hosts[i].RequestedHostname)
+		}
+	}
+
+	err = tx.Commit().Error
+	if err != nil {
+		log.Error(err)
+		return common.NewApiError(http.StatusInternalServerError, errors.New("DB error, failed to commit transaction"))
+	}
+	txSuccess = true
+
 	return installer.NewInstallClusterAccepted().WithPayload(&cluster.Cluster)
 }
 
@@ -1369,9 +1431,9 @@ func (b *bareMetalInventory) RegisterHost(ctx context.Context, params installer.
 	}
 
 	url := installer.GetHostURL{ClusterID: params.ClusterID, HostID: *params.NewHostParams.HostID}
-	kind := swag.String(hostapi.ResourceKindHost)
-	if swag.StringValue(cluster.Kind) == ResourceKindClusterDay2 {
-		kind = swag.String(hostapi.ResourceKindDay2Host)
+	kind := swag.String(models.HostKindHost)
+	if swag.StringValue(cluster.Kind) == models.ClusterKindClusterDay2 {
+		kind = swag.String(models.HostKindDay2Host)
 	}
 	host = models.Host{
 		ID:                    params.NewHostParams.HostID,
@@ -2610,14 +2672,15 @@ func (b *bareMetalInventory) customizeHostname(host *models.Host) {
 
 func (b *bareMetalInventory) RegisterInstalledCluster(ctx context.Context, params installer.RegisterInstalledClusterParams) middleware.Responder {
 	log := logutil.FromContext(ctx, b.log)
-	id := strfmt.UUID(uuid.New().String())
-	url := installer.GetClusterURL{ClusterID: id}
-	log.Infof("Register installed-cluster: %s with id %s", swag.StringValue(params.NewInstalledClusterParams.Name), id)
+	id := params.NewInstalledClusterParams.ID
+	url := installer.GetClusterURL{ClusterID: *id}
+	consoleURL := swag.StringValue(params.NewInstalledClusterParams.APIVip)
+	log.Infof("Register installed-cluster: %s with id %s", swag.StringValue(params.NewInstalledClusterParams.Name), id.String())
 
 	cluster := common.Cluster{Cluster: models.Cluster{
-		ID:               &id,
+		ID:               id,
 		Href:             swag.String(url.String()),
-		Kind:             swag.String(ResourceKindClusterDay2),
+		Kind:             swag.String(models.ClusterKindClusterDay2),
 		Name:             swag.StringValue(params.NewInstalledClusterParams.Name),
 		OpenshiftVersion: swag.StringValue(params.NewInstalledClusterParams.OpenshiftVersion),
 		UpdatedAt:        strfmt.DateTime{},
@@ -2636,7 +2699,7 @@ func (b *bareMetalInventory) RegisterInstalledCluster(ctx context.Context, param
 	}
 
 	// Persist worker-ignition to s3 for cluster
-	ignitionConfig, err := b.formatNodeIgnitionFile(swag.StringValue(params.NewInstalledClusterParams.ConsoleURL))
+	ignitionConfig, err := b.formatNodeIgnitionFile(consoleURL)
 	if err != nil {
 		log.WithError(err).Errorf("failed to format ignition config file for cluster %s", cluster.ID)
 	}
@@ -2646,24 +2709,12 @@ func (b *bareMetalInventory) RegisterInstalledCluster(ctx context.Context, param
 			WithPayload(common.GenerateError(http.StatusInternalServerError, fmt.Errorf("failed to upload %s to s3", fileName)))
 	}
 
-	// Update cluster status to Installed
-	installedStatus := models.ClusterStatusInstalled
-	if err := b.updateClusterStatus(ctx, &cluster, &installedStatus); err != nil {
-		log.Errorf("failed to update status of cluster %s", swag.StringValue(params.NewInstalledClusterParams.Name))
-		return installer.NewRegisterInstalledClusterInternalServerError().
-			WithPayload(common.GenerateError(http.StatusInternalServerError, err))
-	}
-
 	return installer.NewRegisterInstalledClusterCreated().WithPayload(&cluster.Cluster)
 }
 
 func (b *bareMetalInventory) formatNodeIgnitionFile(consoleURL string) ([]byte, error) {
-	url, err := url.Parse(consoleURL)
-	if err != nil {
-		return nil, err
-	}
 	var ignitionParams = map[string]string{
-		"SOURCE": fmt.Sprintf("https://%s/config/worker", url.Host),
+		"SOURCE": "http://" + consoleURL + ":22624/config/worker",
 	}
 	tmpl, err := template.New("nodeIgnition").Parse(nodeIgnitionFormat)
 	if err != nil {
@@ -2674,27 +2725,6 @@ func (b *bareMetalInventory) formatNodeIgnitionFile(consoleURL string) ([]byte, 
 		return nil, err
 	}
 	return buf.Bytes(), nil
-}
-
-func (b *bareMetalInventory) updateClusterStatus(ctx context.Context, c *common.Cluster, status *string) error {
-	log := logutil.FromContext(ctx, b.log)
-	srcStatus := *c.Status
-	updates := map[string]interface{}{
-		"status":            swag.StringValue(status),
-		"status_info":       swag.StringValue(status),
-		"status_updated_at": strfmt.DateTime(time.Now()),
-	}
-	dbReply := b.db.Model(&models.Cluster{}).Where("id = ?", c.ID.String()).Updates(updates)
-	if dbReply.Error != nil {
-		return errors.Wrapf(dbReply.Error, "failed to update cluster <%s> state from <%s> to <%s>",
-			c.ID.String(), srcStatus, swag.StringValue(c.Status))
-	}
-	c.Status = status
-	c.StatusInfo = status
-	log.Infof("Updated cluster <%s> status from <%s> to <%s> with fields: <%v>",
-		c.ID.String(), srcStatus, swag.StringValue(c.Status), updates)
-
-	return nil
 }
 
 func proxySettingsChanged(params *models.ClusterUpdateParams, cluster *common.Cluster) bool {

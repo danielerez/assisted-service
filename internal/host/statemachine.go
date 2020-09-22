@@ -161,6 +161,16 @@ func NewHostStateMachine(th *transitionHandler) stateswitch.StateMachine {
 		DestinationState: stateswitch.State(models.HostStatusDisabled),
 	})
 
+	// Install day2 host
+	sm.AddTransition(stateswitch.TransitionRule{
+		TransitionType: TransitionTypeInstallHost,
+		SourceStates: []stateswitch.State{
+			stateswitch.State(models.HostStatusKnown),
+		},
+		DestinationState: stateswitch.State(models.HostStatusInstalling),
+		PostTransition:   th.PostInstallHost,
+	})
+
 	// Disable host
 	sm.AddTransition(stateswitch.TransitionRule{
 		TransitionType: TransitionTypeDisableHost,

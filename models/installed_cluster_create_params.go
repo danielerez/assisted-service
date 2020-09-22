@@ -19,9 +19,9 @@ import (
 // swagger:model installed-cluster-create-params
 type InstalledClusterCreateParams struct {
 
-	// The console URL of the node.
+	// api vip domain.
 	// Required: true
-	ConsoleURL *string `json:"console_url"`
+	APIVip *string `json:"api_vip"`
 
 	// Unique identifier of the object.
 	// Required: true
@@ -42,7 +42,7 @@ type InstalledClusterCreateParams struct {
 func (m *InstalledClusterCreateParams) Validate(formats strfmt.Registry) error {
 	var res []error
 
-	if err := m.validateConsoleURL(formats); err != nil {
+	if err := m.validateAPIVip(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -64,9 +64,9 @@ func (m *InstalledClusterCreateParams) Validate(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *InstalledClusterCreateParams) validateConsoleURL(formats strfmt.Registry) error {
+func (m *InstalledClusterCreateParams) validateAPIVip(formats strfmt.Registry) error {
 
-	if err := validate.Required("console_url", "body", m.ConsoleURL); err != nil {
+	if err := validate.Required("api_vip", "body", m.APIVip); err != nil {
 		return err
 	}
 

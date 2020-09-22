@@ -89,7 +89,7 @@ type Cluster struct {
 
 	// Indicates the type of this object. Will be 'Cluster' if this is a complete object or 'ClusterLink' if it is just a link.
 	// Required: true
-	// Enum: [Cluster]
+	// Enum: [Cluster ClusterDay2]
 	Kind *string `json:"kind"`
 
 	// A CIDR that all hosts belonging to the cluster should have an interfaces with IP address that belongs to this CIDR. The api_vip belongs to this CIDR.
@@ -425,7 +425,7 @@ var clusterTypeKindPropEnum []interface{}
 
 func init() {
 	var res []string
-	if err := json.Unmarshal([]byte(`["Cluster"]`), &res); err != nil {
+	if err := json.Unmarshal([]byte(`["Cluster","ClusterDay2"]`), &res); err != nil {
 		panic(err)
 	}
 	for _, v := range res {
@@ -437,6 +437,9 @@ const (
 
 	// ClusterKindCluster captures enum value "Cluster"
 	ClusterKindCluster string = "Cluster"
+
+	// ClusterKindClusterDay2 captures enum value "ClusterDay2"
+	ClusterKindClusterDay2 string = "ClusterDay2"
 )
 
 // prop value enum

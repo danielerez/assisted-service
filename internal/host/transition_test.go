@@ -578,7 +578,7 @@ var _ = Describe("Install", func() {
 			{
 				name:       "known",
 				srcState:   models.HostStatusKnown,
-				validation: failure,
+				validation: success,
 			},
 			{
 				name:       "disabled nothing change",

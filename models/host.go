@@ -64,7 +64,7 @@ type Host struct {
 
 	// Indicates the type of this object. Will be 'Host' if this is a complete object or 'HostLink' if it is just a link.
 	// Required: true
-	// Enum: [Host]
+	// Enum: [Host Day2Host]
 	Kind *string `json:"kind"`
 
 	// logs collected at
@@ -254,7 +254,7 @@ var hostTypeKindPropEnum []interface{}
 
 func init() {
 	var res []string
-	if err := json.Unmarshal([]byte(`["Host"]`), &res); err != nil {
+	if err := json.Unmarshal([]byte(`["Host","Day2Host"]`), &res); err != nil {
 		panic(err)
 	}
 	for _, v := range res {
@@ -266,6 +266,9 @@ const (
 
 	// HostKindHost captures enum value "Host"
 	HostKindHost string = "Host"
+
+	// HostKindDay2Host captures enum value "Day2Host"
+	HostKindDay2Host string = "Day2Host"
 )
 
 // prop value enum

@@ -543,6 +543,74 @@ func init() {
         }
       }
     },
+    "/clusters/{cluster_id}/actions/install_hosts": {
+      "post": {
+        "tags": [
+          "installer"
+        ],
+        "summary": "Installs the OpenShift bare metal cluster.",
+        "operationId": "InstallHosts",
+        "parameters": [
+          {
+            "type": "string",
+            "format": "uuid",
+            "name": "cluster_id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Success.",
+            "schema": {
+              "$ref": "#/definitions/cluster"
+            }
+          },
+          "400": {
+            "description": "Error.",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "401": {
+            "description": "Unauthorized.",
+            "schema": {
+              "$ref": "#/definitions/infra_error"
+            }
+          },
+          "403": {
+            "description": "Forbidden.",
+            "schema": {
+              "$ref": "#/definitions/infra_error"
+            }
+          },
+          "404": {
+            "description": "Error.",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed.",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "409": {
+            "description": "Error.",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Error.",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      }
+    },
     "/clusters/{cluster_id}/actions/reset": {
       "post": {
         "tags": [
@@ -2488,7 +2556,8 @@ func init() {
           "description": "Indicates the type of this object. Will be 'Cluster' if this is a complete object or 'ClusterLink' if it is just a link.",
           "type": "string",
           "enum": [
-            "Cluster"
+            "Cluster",
+            "ClusterDay2"
           ]
         },
         "machine_network_cidr": {
@@ -3186,7 +3255,8 @@ func init() {
           "description": "Indicates the type of this object. Will be 'Host' if this is a complete object or 'HostLink' if it is just a link.",
           "type": "string",
           "enum": [
-            "Host"
+            "Host",
+            "Day2Host"
           ]
         },
         "logs_collected_at": {
@@ -3490,12 +3560,12 @@ func init() {
       "required": [
         "id",
         "name",
-        "console_url",
+        "api_vip",
         "openshift_version"
       ],
       "properties": {
-        "console_url": {
-          "description": "The console URL of the node.",
+        "api_vip": {
+          "description": "api vip domain.",
           "type": "string"
         },
         "id": {
@@ -4273,6 +4343,74 @@ func init() {
         ],
         "summary": "Installs the OpenShift bare metal cluster.",
         "operationId": "InstallCluster",
+        "parameters": [
+          {
+            "type": "string",
+            "format": "uuid",
+            "name": "cluster_id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Success.",
+            "schema": {
+              "$ref": "#/definitions/cluster"
+            }
+          },
+          "400": {
+            "description": "Error.",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "401": {
+            "description": "Unauthorized.",
+            "schema": {
+              "$ref": "#/definitions/infra_error"
+            }
+          },
+          "403": {
+            "description": "Forbidden.",
+            "schema": {
+              "$ref": "#/definitions/infra_error"
+            }
+          },
+          "404": {
+            "description": "Error.",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed.",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "409": {
+            "description": "Error.",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "500": {
+            "description": "Error.",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      }
+    },
+    "/clusters/{cluster_id}/actions/install_hosts": {
+      "post": {
+        "tags": [
+          "installer"
+        ],
+        "summary": "Installs the OpenShift bare metal cluster.",
+        "operationId": "InstallHosts",
         "parameters": [
           {
             "type": "string",
@@ -6303,7 +6441,8 @@ func init() {
           "description": "Indicates the type of this object. Will be 'Cluster' if this is a complete object or 'ClusterLink' if it is just a link.",
           "type": "string",
           "enum": [
-            "Cluster"
+            "Cluster",
+            "ClusterDay2"
           ]
         },
         "machine_network_cidr": {
@@ -6983,7 +7122,8 @@ func init() {
           "description": "Indicates the type of this object. Will be 'Host' if this is a complete object or 'HostLink' if it is just a link.",
           "type": "string",
           "enum": [
-            "Host"
+            "Host",
+            "Day2Host"
           ]
         },
         "logs_collected_at": {
@@ -7288,12 +7428,12 @@ func init() {
       "required": [
         "id",
         "name",
-        "console_url",
+        "api_vip",
         "openshift_version"
       ],
       "properties": {
-        "console_url": {
-          "description": "The console URL of the node.",
+        "api_vip": {
+          "description": "api vip domain.",
           "type": "string"
         },
         "id": {

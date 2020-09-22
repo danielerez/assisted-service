@@ -25,10 +25,12 @@ import (
 	logutil "github.com/openshift/assisted-service/pkg/log"
 )
 
+/*
 const (
 	ResourceKindHost     = "Host"
 	ResourceKindDay2Host = "Day2Host"
 )
+*/
 
 var BootstrapStages = [...]models.HostStage{
 	models.HostStageStartingInstallation, models.HostStageInstalling,
@@ -287,9 +289,9 @@ func (m *Manager) UpdateInstallProgress(ctx context.Context, h *models.Host, pro
 		_, err = updateHostStatus(ctx, logutil.FromContext(ctx, m.log), m.db, m.eventsHandler, h.ClusterID, *h.ID,
 			swag.StringValue(h.Status), models.HostStatusError, statusInfo)
 	case models.HostStageRebooting:
-		if swag.StringValue(h.Kind) == ResourceKindDay2Host {
+		if swag.StringValue(h.Kind) == models.HostKindDay2Host {
 			_, err = updateHostProgress(ctx, logutil.FromContext(ctx, m.log), m.db, m.eventsHandler, h.ClusterID, *h.ID,
-				swag.StringValue(h.Status), models.HostStatusInstalled, statusInfo,
+				swag.StringValue(h.Status), models.HostStatusDay2Installed, statusInfo,
 				h.Progress.CurrentStage, progress.CurrentStage, progress.ProgressInfo)
 			break
 		}
@@ -523,6 +525,10 @@ func (m *Manager) selectRole(ctx context.Context, h *models.Host, db *gorm.DB) (
 		autoSelectedRole = models.HostRoleWorker
 		log              = logutil.FromContext(ctx, m.log)
 	)
+
+	if swag.StringValue(h.Kind) == models.HostKindDay2Host {
+		return autoSelectedRole, nil
+	}
 
 	// count already existing masters
 	mastersCount := 0
