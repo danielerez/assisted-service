@@ -23,6 +23,9 @@ const (
 	// StepTypeConnectivityCheck captures enum value "connectivity-check"
 	StepTypeConnectivityCheck StepType = "connectivity-check"
 
+	// StepTypeConnectivityCheckAPI captures enum value "connectivity-check-api"
+	StepTypeConnectivityCheckAPI StepType = "connectivity-check-api"
+
 	// StepTypeExecute captures enum value "execute"
 	StepTypeExecute StepType = "execute"
 
@@ -47,7 +50,7 @@ var stepTypeEnum []interface{}
 
 func init() {
 	var res []StepType
-	if err := json.Unmarshal([]byte(`["connectivity-check","execute","inventory","install","free-network-addresses","reset-installation","dhcp-lease-allocate"]`), &res); err != nil {
+	if err := json.Unmarshal([]byte(`["connectivity-check","connectivity-check-api","execute","inventory","install","free-network-addresses","reset-installation","dhcp-lease-allocate"]`), &res); err != nil {
 		panic(err)
 	}
 	for _, v := range res {
