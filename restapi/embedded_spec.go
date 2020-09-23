@@ -2948,6 +2948,28 @@ func init() {
         }
       }
     },
+    "connectivity_check_api_request": {
+      "type": "object",
+      "required": [
+        "scheme",
+        "host",
+        "port"
+      ],
+      "properties": {
+        "host": {
+          "description": "API virtual IP or hostname.",
+          "type": "string"
+        },
+        "port": {
+          "description": "API port",
+          "type": "integer"
+        },
+        "scheme": {
+          "description": "API scheme (http/https).",
+          "type": "string"
+        }
+      }
+    },
     "cpu": {
       "type": "object",
       "properties": {
@@ -3805,6 +3827,7 @@ func init() {
       "type": "string",
       "enum": [
         "connectivity-check",
+        "connectivity-check-api",
         "execute",
         "inventory",
         "install",
@@ -6815,6 +6838,28 @@ func init() {
         }
       }
     },
+    "connectivity_check_api_request": {
+      "type": "object",
+      "required": [
+        "scheme",
+        "host",
+        "port"
+      ],
+      "properties": {
+        "host": {
+          "description": "API virtual IP or hostname.",
+          "type": "string"
+        },
+        "port": {
+          "description": "API port",
+          "type": "integer"
+        },
+        "scheme": {
+          "description": "API scheme (http/https).",
+          "type": "string"
+        }
+      }
+    },
     "cpu": {
       "type": "object",
       "properties": {
@@ -7673,6 +7718,7 @@ func init() {
       "type": "string",
       "enum": [
         "connectivity-check",
+        "connectivity-check-api",
         "execute",
         "inventory",
         "install",
