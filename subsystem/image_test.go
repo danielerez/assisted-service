@@ -38,61 +38,68 @@ var _ = Describe("system-test image tests", func() {
 	Expect(versions.Payload).ShouldNot(BeEmpty())
 
 	for ocpVersion := range versions.Payload {
-		It(fmt.Sprintf("[minimal-set][ocp-%s]create_and_get_image", ocpVersion), func() {
-			By("Register Cluster", func() {
-				cluster, err = userBMClient.Installer.RegisterCluster(ctx, &installer.RegisterClusterParams{
-					NewClusterParams: &models.ClusterCreateParams{
-						Name:             swag.String("test-cluster"),
-						OpenshiftVersion: swag.String(ocpVersion),
-						PullSecret:       swag.String(pullSecret),
-					},
+		ocpVersion := ocpVersion
+		for _, imageType := range []models.ImageType{models.ImageTypeFullIso, models.ImageTypeMinimalIso} {
+			imageType := imageType
+			It(fmt.Sprintf("[minimal-set][ocp-%s]create_and_get_image", ocpVersion), func() {
+				By("Register Cluster", func() {
+					cluster, err = userBMClient.Installer.RegisterCluster(ctx, &installer.RegisterClusterParams{
+						NewClusterParams: &models.ClusterCreateParams{
+							Name:             swag.String("test-cluster"),
+							OpenshiftVersion: swag.String(ocpVersion),
+							PullSecret:       swag.String(pullSecret),
+						},
+					})
+					Expect(err).NotTo(HaveOccurred())
+					clusterID = *cluster.GetPayload().ID
 				})
-				Expect(err).NotTo(HaveOccurred())
-				clusterID = *cluster.GetPayload().ID
-			})
 
-			By("Generate ISO", func() {
-				_, err = userBMClient.Installer.GenerateClusterISO(ctx, &installer.GenerateClusterISOParams{
-					ClusterID:         clusterID,
-					ImageCreateParams: &models.ImageCreateParams{},
+				By("Generate ISO", func() {
+					_, err = userBMClient.Installer.GenerateClusterISO(ctx, &installer.GenerateClusterISOParams{
+						ClusterID: clusterID,
+						ImageCreateParams: &models.ImageCreateParams{
+							ImageType: imageType,
+						},
+					})
+					Expect(err).NotTo(HaveOccurred())
 				})
-				Expect(err).NotTo(HaveOccurred())
-			})
 
-			By("Download ISO", func() {
-				downloadClusterIso(ctx, clusterID)
-			})
-
-			By("Verify events", func() {
-				verifyEventExistence(clusterID, "Registered cluster")
-			})
-		})
-
-		It(fmt.Sprintf("[ocp-%s]create_and_download_live_iso", ocpVersion), func() {
-			By("Create ISO", func() {
-				ignitionParams := models.AssistedServiceIsoCreateParams{
-					SSHPublicKey:     sshPublicKey,
-					PullSecret:       pullSecret,
-					OpenshiftVersion: ocpVersion,
-				}
-				_, err = userBMClient.AssistedServiceIso.CreateISOAndUploadToS3(ctx, &assisted_service_iso.CreateISOAndUploadToS3Params{
-					AssistedServiceIsoCreateParams: &ignitionParams,
+				By("Download ISO", func() {
+					downloadClusterIso(ctx, clusterID)
 				})
-				Expect(err).NotTo(HaveOccurred())
+
+				By("Verify events", func() {
+					verifyEventExistence(clusterID, "Registered cluster")
+					verifyEventExistence(clusterID, fmt.Sprintf("Image type is \"%s\"", imageType))
+				})
 			})
 
-			By("Download ISO", func() {
-				file, err := ioutil.TempFile("", "tmp")
-				if err != nil {
-					log.Fatal(err)
-				}
-				defer os.Remove(file.Name())
+			It(fmt.Sprintf("[ocp-%s]create_and_download_live_iso", ocpVersion), func() {
+				By("Create ISO", func() {
+					ignitionParams := models.AssistedServiceIsoCreateParams{
+						SSHPublicKey:     sshPublicKey,
+						PullSecret:       pullSecret,
+						OpenshiftVersion: ocpVersion,
+					}
+					_, err = userBMClient.AssistedServiceIso.CreateISOAndUploadToS3(ctx, &assisted_service_iso.CreateISOAndUploadToS3Params{
+						AssistedServiceIsoCreateParams: &ignitionParams,
+					})
+					Expect(err).NotTo(HaveOccurred())
+				})
 
-				_, err = userBMClient.AssistedServiceIso.DownloadISO(ctx, &assisted_service_iso.DownloadISOParams{}, file)
-				Expect(err).NotTo(HaveOccurred())
-				verifyFileNotEmpty(file)
+				By("Download ISO", func() {
+					file, err := ioutil.TempFile("", "tmp")
+					if err != nil {
+						log.Fatal(err)
+					}
+					defer os.Remove(file.Name())
+
+					_, err = userBMClient.AssistedServiceIso.DownloadISO(ctx, &assisted_service_iso.DownloadISOParams{}, file)
+					Expect(err).NotTo(HaveOccurred())
+					verifyFileNotEmpty(file)
+				})
 			})
-		})
+		}
 	}
 })
 
