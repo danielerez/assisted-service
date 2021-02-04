@@ -88,6 +88,10 @@ func (e *rhcosEditor) CreateClusterMinimalISO(ignition string, staticIPConfig st
 		}
 	}
 
+	if err := e.addEmptyRAMDisk(); err != nil {
+		return "", errors.Wrap(err, "failed to add additional ramdisk")
+	}
+
 	return e.create()
 }
 
@@ -98,6 +102,38 @@ func (e *rhcosEditor) addIgnitionArchive(ignition string) error {
 	}
 
 	return ioutil.WriteFile(e.isoHandler.ExtractedPath("images/ignition.img"), archiveBytes, 0644)
+}
+
+func (e *rhcosEditor) addEmptyRAMDisk() error {
+	imagePath := "/images/assisted_installer_empty.img"
+
+	f, err := os.Create(e.isoHandler.ExtractedPath(imagePath))
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	w := cpio.NewWriter(f)
+	if err = addFileToArchive(w, "/home/empty", "empty", 0o664); err != nil {
+		return err
+	}
+	if err = w.Close(); err != nil {
+		return err
+	}
+
+	ramdisk_padding := int(256 * 1024)
+	data := make([]byte, ramdisk_padding)
+	_, err = f.Write(data)
+	if err != nil {
+		return err
+	}
+
+	// edit config to add new image to initrd
+	err = editFile(e.isoHandler.ExtractedPath("EFI/redhat/grub.cfg"), `(?m)^(\s+initrd) (.+| )+$`, fmt.Sprintf("$1 $2 %s", imagePath))
+	if err != nil {
+		return err
+	}
+	return editFile(e.isoHandler.ExtractedPath("isolinux/isolinux.cfg"), `(?m)^(\s+append.*initrd=\S+) (.*)$`, fmt.Sprintf("${1},%s ${2}", imagePath))
 }
 
 func (e *rhcosEditor) addCustomRAMDisk(staticIPConfig string) error {
