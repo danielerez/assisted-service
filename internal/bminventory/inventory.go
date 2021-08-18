@@ -78,6 +78,7 @@ const (
 	MediaDisconnected int64 = 256
 	// 125 is the generic exit code for cases the error is in podman / docker and not the container we tried to run
 	ContainerAlreadyRunningExitCode = 125
+	DefaultCPUArchitecture          = "x86_64"
 )
 
 type Config struct {
@@ -447,7 +448,13 @@ func (b *bareMetalInventory) RegisterClusterInternal(
 		}
 	}
 
-	openshiftVersion, err := b.versionsHandler.GetOpenshiftVersion(swag.StringValue(params.NewClusterParams.OpenshiftVersion))
+	cpuArchitecture, err := b.getNewClusterCPUArchitecture(params.NewClusterParams)
+	if err != nil {
+		return nil, common.NewApiError(http.StatusBadRequest, err)
+	}
+
+	openshiftVersion, err := b.versionsHandler.GetOpenshiftVersion(
+		swag.StringValue(params.NewClusterParams.OpenshiftVersion), cpuArchitecture)
 	if err != nil {
 		err = errors.Errorf("Openshift version %s is not supported",
 			swag.StringValue(params.NewClusterParams.OpenshiftVersion))
@@ -482,6 +489,7 @@ func (b *bareMetalInventory) RegisterClusterInternal(
 			Name:                     swag.StringValue(params.NewClusterParams.Name),
 			OpenshiftVersion:         *openshiftVersion.ReleaseVersion,
 			OcpReleaseImage:          *openshiftVersion.ReleaseImage,
+			CPUArchitecture:          cpuArchitecture,
 			ServiceNetworkCidr:       swag.StringValue(params.NewClusterParams.ServiceNetworkCidr),
 			SSHPublicKey:             params.NewClusterParams.SSHPublicKey,
 			UpdatedAt:                strfmt.DateTime{},
@@ -622,6 +630,31 @@ func verifyMinimalOpenShiftVersionForSingleNode(requestedOpenshiftVersion string
 	}
 	return nil
 }
+
+func (b *bareMetalInventory) getNewClusterCPUArchitecture(newClusterParams *models.ClusterCreateParams) (string, error) {
+	if newClusterParams.CPUArchitecture == "" {
+		// Empty value implies x86_64
+		return DefaultCPUArchitecture, nil
+	}
+
+	cpuArchitectures, err := b.versionsHandler.GetCPUArchitectures(*newClusterParams.OpenshiftVersion)
+	if err != nil {
+		return "", err
+	}
+	for _, cpuArchitecture := range cpuArchitectures {
+		if cpuArchitecture == newClusterParams.CPUArchitecture {
+			return cpuArchitecture, nil
+		}
+	}
+
+	if newClusterParams.CPUArchitecture != DefaultCPUArchitecture {
+		// Didn't find requested architecture in the release images
+		return "", errors.Errorf("Requested CPU architecture %s is not available", newClusterParams.CPUArchitecture)
+	}
+
+	return newClusterParams.CPUArchitecture, nil
+}
+
 func (b *bareMetalInventory) RegisterAddHostsCluster(ctx context.Context, params installer.RegisterAddHostsClusterParams) middleware.Responder {
 	c, err := b.RegisterAddHostsClusterInternal(ctx, nil, params, true)
 	if err != nil {
@@ -645,7 +678,8 @@ func (b *bareMetalInventory) RegisterAddHostsClusterInternal(ctx context.Context
 		return nil, common.NewApiError(http.StatusBadRequest, fmt.Errorf("AddHostsCluster for AI cluster %s already exists", id))
 	}
 
-	openshiftVersion, err := b.versionsHandler.GetOpenshiftVersion(inputOpenshiftVersion)
+	// Day2 supports only x86_64 for now
+	openshiftVersion, err := b.versionsHandler.GetOpenshiftVersion(inputOpenshiftVersion, DefaultCPUArchitecture)
 	if err != nil {
 		log.WithError(err).Errorf("Failed to get opnshift version supported by versions map from version %s", inputOpenshiftVersion)
 		return nil, common.NewApiError(http.StatusBadRequest, fmt.Errorf("failed to get opnshift version supported by versions map from version %s", inputOpenshiftVersion))
@@ -1740,7 +1774,7 @@ func (b *bareMetalInventory) generateClusterInstallConfig(ctx context.Context, c
 		return errors.Wrapf(err, "failed to get install config for cluster %s", cluster.ID)
 	}
 
-	ocpVersion, err := b.versionsHandler.GetOpenshiftVersion(cluster.OpenshiftVersion)
+	ocpVersion, err := b.versionsHandler.GetOpenshiftVersion(cluster.OpenshiftVersion, cluster.CPUArchitecture)
 	if err != nil {
 		msg := fmt.Sprintf("failed to get OpenshiftVersion for cluster %s with openshift version %s", cluster.ID, cluster.OpenshiftVersion)
 		log.WithError(err).Errorf(msg)
@@ -4895,7 +4929,8 @@ func (b *bareMetalInventory) RegisterInfraEnvInternal(
 		}
 	}
 
-	openshiftVersion, err := b.versionsHandler.GetOpenshiftVersion(swag.StringValue(params.InfraenvCreateParams.OpenshiftVersion))
+	openshiftVersion, err := b.versionsHandler.GetOpenshiftVersion(
+		swag.StringValue(params.InfraenvCreateParams.OpenshiftVersion), params.InfraenvCreateParams.CPUArchitecture)
 	if err != nil {
 		err = errors.Errorf("Openshift version %s is not supported",
 			swag.StringValue(params.InfraenvCreateParams.OpenshiftVersion))
