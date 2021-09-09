@@ -22,5 +22,11 @@
         "cpu_architecture": "x86_64",
         "url": "quay.io/openshift-release-dev/ocp-release:4.9.0-fc.0-x86_64",
         "version": "4.9.0-fc.0"
+    },
+    {
+        "openshift_version": "4.9",
+        "cpu_architecture": "arm64",
+        "url": "quay.io/openshift-release-dev/ocp-release@sha256:aecd38724aab2c05045ef526edc2e34a20829c57ecf9085212bc44f25b0845ac",
+        "version": "4.9.0-fc.0"
     }
 ]
