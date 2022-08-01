@@ -171,6 +171,11 @@ type AgentClusterInstallSpec struct {
 	// Proxy defines the proxy settings used for the install config
 	// +optional
 	Proxy *Proxy `json:"proxy,omitempty"`
+
+	// PlatformType is the name for the specific platform upon which to perform the installation.
+	// +kubebuilder:validation:Enum=baremetal;vsphere;ovirt;none
+	// +optional
+	PlatformType *string `json:"platformType,omitempty"`
 }
 
 // IgnitionEndpoint stores the data to of the custom ignition endpoint.

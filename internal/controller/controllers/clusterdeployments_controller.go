@@ -640,6 +640,17 @@ func hyperthreadingInSpec(clusterInstall *hiveext.AgentClusterInstall) bool {
 		})
 }
 
+func getPlatform(platformTypePtr *string) *models.Platform {
+	var platform *models.Platform
+	var platformType = swag.StringValue(platformTypePtr)
+	if platformType != "" {
+		platform = &models.Platform{
+			Type: common.PlatformTypePtr(models.PlatformType(platformType)),
+		}
+	}
+	return platform
+}
+
 func getHyperthreading(clusterInstall *hiveext.AgentClusterInstall) *string {
 	const (
 		None    = 0
@@ -867,6 +878,13 @@ func (r *ClusterDeploymentsReconciler) updateIfNeeded(ctx context.Context,
 	hyperthreading := getHyperthreading(clusterInstall)
 	if cluster.Hyperthreading != *hyperthreading {
 		params.Hyperthreading = hyperthreading
+		update = true
+	}
+
+	// update platform
+	platform := getPlatform(clusterInstall.Spec.PlatformType)
+	if cluster.Platform == nil || cluster.Platform.Type != platform.Type {
+		params.Platform = platform
 		update = true
 	}
 
@@ -1105,6 +1123,7 @@ func CreateClusterParams(clusterDeployment *hivev1.ClusterDeployment, clusterIns
 		SSHPublicKey:          clusterInstall.Spec.SSHPublicKey,
 		CPUArchitecture:       releaseImageCPUArch,
 		UserManagedNetworking: swag.Bool(isUserManagedNetwork(clusterInstall)),
+		Platform:              getPlatform(clusterInstall.Spec.PlatformType),
 	}
 
 	if len(clusterInstall.Spec.Networking.ClusterNetwork) > 0 {
