@@ -6,14 +6,14 @@ require (
 	github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d
 	github.com/alessio/shellescape v1.4.1
 	github.com/asaskevich/govalidator v0.0.0-20200907205600-7a23bdc65eef
-	github.com/aws/aws-sdk-go v1.34.28
+	github.com/aws/aws-sdk-go v1.44.204
 	github.com/buger/jsonparser v1.1.1
 	github.com/cavaliercoder/go-cpio v0.0.0-20180626203310-925f9528c45e
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
 	github.com/containerd/continuity v0.0.0-20200710164510-efbc4488d8fe // indirect
 	github.com/containers/image/v5 v5.7.0
-	github.com/coreos/ignition/v2 v2.9.0
-	github.com/coreos/vcontext v0.0.0-20201120045928-b0e13dab675c
+	github.com/coreos/ignition/v2 v2.15.0
+	github.com/coreos/vcontext v0.0.0-20230201181013-d72178a18687
 	github.com/danielerez/go-dns-client v0.0.0-20200630114514-0b60d1703f0b
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/diskfs/go-diskfs v1.1.2-0.20210216073915-ba492710e2d8
@@ -29,8 +29,8 @@ require (
 	github.com/go-openapi/swag v0.19.15
 	github.com/go-openapi/validate v0.20.3
 	github.com/golang-collections/go-datastructures v0.0.0-20150211160725-59788d5eb259
-	github.com/golang/mock v1.5.0
-	github.com/google/go-cmp v0.5.5
+	github.com/golang/mock v1.6.0
+	github.com/google/go-cmp v0.5.9
 	github.com/google/renameio v0.1.0
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-multierror v1.1.0
@@ -60,16 +60,15 @@ require (
 	github.com/rs/cors v1.7.0
 	github.com/sirupsen/logrus v1.7.0
 	github.com/slok/go-http-metrics v0.8.0
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.8.1
 	github.com/thedevsaddam/retry v0.0.0-20200324223450-9769a859cc6d
 	github.com/thoas/go-funk v0.8.0
-	github.com/vincent-petithory/dataurl v0.0.0-20191104211930-d1553a71de50
+	github.com/vincent-petithory/dataurl v1.0.0
 	go.elastic.co/apm/module/apmhttp v1.11.0
 	go.elastic.co/apm/module/apmlogrus v1.11.0
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
-	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c
-	golang.org/x/tools v0.1.5 // indirect
+	golang.org/x/sync v0.1.0
+	golang.org/x/sys v0.5.0
 	gopkg.in/ini.v1 v1.51.0
 	gopkg.in/square/go-jose.v2 v2.3.1
 	gopkg.in/yaml.v2 v2.4.0
